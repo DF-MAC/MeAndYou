@@ -1,0 +1,32 @@
+.
+├── .github/
+│   └── workflows/
+│       ├── build.yml
+│       ├── deploy.yml
+│       └── test.yml
+├── app/
+│   ├── controllers/
+│   ├── database/
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   └── user_model.py
+│   │   ├── __init__.py
+│   │   └── connections.py
+│   ├── middleware/
+│   │   ├── __init__.py
+│   │   ├── cors.py
+│   │   └── security.py
+│   ├── routes/
+│   │   ├── __init__.py
+│   │   └── user_routes.py
+│   ├── __init__.py
+│   └── config.py
+├── tests/
+│   ├── __init__.py
+│   ├── conftest.py
+│   ├── factories.py
+│   └── test_routes.py
+├── .flaskenv
+├── app.py
+├── Makefile
+└── pyproject.toml

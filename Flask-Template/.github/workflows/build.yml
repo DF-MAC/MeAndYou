@@ -1,0 +1,35 @@
+name: build
+
+on:
+  push:
+    branches: [production]
+  pull_request:
+    branches: [production]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+      - name: Install dependencies
+        run: |
+          pip install poetry
+          poetry install
+      - name: Lint Code
+        run: |
+          poetry run flake8 app
+          poetry run black app --check
+      - name: Security Checks
+        run: |
+          poetry run bandit -r app
+          poetry run safety check
+      - name: Run Tests
+        run: poetry run pytest --cov=app
+      - name: Deploy (if all checks pass)
+        run: echo "Deploying to production server"
+        if: github.ref == 'refs/heads/production'
