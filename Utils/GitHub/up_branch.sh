@@ -5,14 +5,20 @@ upBranch() {
     default_branch="main"
 
     # Check if 'main' exists on remote
-    if ! git ls-remote --exit-code --heads origin main >/dev/null 2>&1; then
-        # 'main' doesn't exist, get default branch from remote
-        default_branch=$(git remote show origin | sed -n '/HEAD branch/s/.*: //p')
-        if [ -z "$default_branch" ]; then
-            echo "Error: Could not determine the default branch from the remote repository."
-            return 1
+    if ! git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+        # 'main' doesn't exist on remote
+        echo "Error: Branch '$branch' does not exist on remote 'origin'."
+        # Get the default branch from remote
+        remote_default_branch=$(git remote show origin | sed -n '/HEAD branch/s/.*: //p')
+        if [ -n "$remote_default_branch" ]; then
+            echo "The default branch on remote 'origin' is '$remote_default_branch'."
+            echo "Please specify the branch to rebase onto:"
+            echo "Example:  upBranch $remote_default_branch"
+        else
+            echo "Could not determine the default branch on remote 'origin'."
+            echo "Please specify the branch to rebase onto."
         fi
-        echo "Default branch 'main' not found. Using remote default branch Example:'$default_branch'."
+        return 1
     fi
 
     # Get the branch to rebase from, defaulting to the determined default branch
