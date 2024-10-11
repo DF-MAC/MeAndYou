@@ -49,7 +49,9 @@ upBranch() {
 
     # Fetch updates from origin, including the specified branch
     echo "Fetching updates from origin..."
-    git fetch origin "$branch"
+    git switch "$branch"
+    git pull origin "$branch"
+    git switch -
 
     # Check if the specified branch exists on the remote
     if ! git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
