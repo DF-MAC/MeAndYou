@@ -1,5 +1,5 @@
 #!/bin/zsh
-
+# Testing rebase function
 upBranch() {
     # Enable error handling
     set -e
