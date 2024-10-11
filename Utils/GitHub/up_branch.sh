@@ -1,24 +1,55 @@
 #!/bin/zsh
 
 upBranch() {
-    # Enable error handling
-    set -e
-
     # Set the default branch to 'main'
     default_branch="main"
 
-    # Get the branch to rebase from, defaulting to 'main' if not provided
+    # Check if 'main' exists on remote
+    if ! git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+        # 'main' doesn't exist on remote
+        echo "Error: Branch '$branch' does not exist on remote 'origin'."
+        # Get the default branch from remote
+        remote_default_branch=$(git remote show origin | sed -n '/HEAD branch/s/.*: //p')
+        if [ -n "$remote_default_branch" ]; then
+            echo "The default branch on remote 'origin' is '$remote_default_branch'."
+            echo "Please specify the branch to rebase onto:"
+            echo "Example:  upBranch $remote_default_branch"
+        else
+            echo "Could not determine the default branch on remote 'origin'."
+            echo "Please specify the branch to rebase onto."
+        fi
+        return 1
+    fi
+
+    # Get the branch to rebase from, defaulting to the determined default branch
     branch="${1:-$default_branch}"
 
     # Check if git is installed
     if ! command -v git >/dev/null 2>&1; then
-        echo "Error: git is not installed."
+        echo "Error: Git is not installed."
         return 1
     fi
 
-    # Check if inside a git repository
+    # Check if inside a Git repository
     if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-        echo "Error: Not inside a git repository."
+        echo "Error: Not inside a Git repository."
+        return 1
+    fi
+
+    # Check if 'origin/main' exists
+    if ! git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+        # 'main' doesn't exist on remote
+        echo "Error: Branch '$branch' does not exist on remote 'origin'."
+        # Get the default branch from remote
+        remote_default_branch=$(git remote show origin | sed -n '/HEAD branch/s/.*: //p')
+        if [ -n "$remote_default_branch" ]; then
+            echo "The default branch on remote 'origin' is '$remote_default_branch'."
+            echo "Please specify the branch to rebase onto:"
+            echo "  upBranch $remote_default_branch"
+        else
+            echo "Could not determine the default branch on remote 'origin'."
+            echo "Please specify the branch to rebase onto."
+        fi
         return 1
     fi
 
@@ -38,7 +69,9 @@ upBranch() {
 
     # Fetch updates from origin, including the specified branch
     echo "Fetching updates from origin..."
-    git fetch origin "$branch"
+    git switch "$branch"
+    git pull origin "$branch"
+    git switch -
 
     # Check if the specified branch exists on the remote
     if ! git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
@@ -103,4 +136,5 @@ upBranch() {
 
     # Success message
     echo "Successfully rebased '$current_branch' onto 'origin/$branch'."
+    return 0
 }
