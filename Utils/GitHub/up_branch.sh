@@ -1,10 +1,7 @@
 #!/bin/zsh
 
 upBranch() {
-    # Enable error handling
-    set -e
-
-    # Determine the default branch from the remote if 'main' doesn't exist
+    # Set the default branch to 'main'
     default_branch="main"
 
     # Check if 'main' exists on remote
@@ -33,6 +30,23 @@ upBranch() {
         return 1
     fi
 
+    # Check if 'origin/main' exists
+    if ! git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+        # 'main' doesn't exist on remote
+        echo "Error: Branch '$branch' does not exist on remote 'origin'."
+        # Get the default branch from remote
+        remote_default_branch=$(git remote show origin | sed -n '/HEAD branch/s/.*: //p')
+        if [ -n "$remote_default_branch" ]; then
+            echo "The default branch on remote 'origin' is '$remote_default_branch'."
+            echo "Please specify the branch to rebase onto:"
+            echo "  upBranch $remote_default_branch"
+        else
+            echo "Could not determine the default branch on remote 'origin'."
+            echo "Please specify the branch to rebase onto."
+        fi
+        return 1
+    fi
+
     # Save the current branch name
     current_branch=$(git rev-parse --abbrev-ref HEAD)
 
@@ -49,12 +63,8 @@ upBranch() {
 
     # Fetch updates from origin, including the specified branch
     echo "Fetching updates from origin..."
-    git fetch origin "$branch"
-
-    # Check if the specified branch exists on the remote
-    if ! git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
-        echo "Error: Branch '$branch' does not exist on remote 'origin'."
-        # Pop the stash if it was pushed
+    if ! git fetch origin "$branch"; then
+        echo "Error: Failed to fetch from origin."
         if [ "$stash_pushed" = true ]; then
             echo "Restoring stashed changes."
             git stash pop
