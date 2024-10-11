@@ -15,7 +15,7 @@ upBranch() {
             echo "Error: Could not determine the default branch from the remote repository."
             return 1
         fi
-        echo "Default branch 'main' not found. Using remote default branch '$default_branch'."
+        echo "Default branch 'main' not found. Using remote default branch Example:'$default_branch'."
     fi
 
     # Get the branch to rebase from, defaulting to the determined default branch

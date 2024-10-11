@@ -1,5 +1,5 @@
 #!/bin/zsh
-
+# TEST
 # This script is used to switch between different GitHub accounts so you can easily
 # push and pull from different repositories using different GitHub accounts.
 # TODO: You will need to have already authenticated with the GitHub CLI for 
