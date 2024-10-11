@@ -1,24 +1,35 @@
 #!/bin/zsh
-# Testing rebase function
+
 upBranch() {
     # Enable error handling
     set -e
 
-    # Set the default branch to 'main'
+    # Determine the default branch from the remote if 'main' doesn't exist
     default_branch="main"
 
-    # Get the branch to rebase from, defaulting to 'main' if not provided
+    # Check if 'main' exists on remote
+    if ! git ls-remote --exit-code --heads origin main >/dev/null 2>&1; then
+        # 'main' doesn't exist, get default branch from remote
+        default_branch=$(git remote show origin | sed -n '/HEAD branch/s/.*: //p')
+        if [ -z "$default_branch" ]; then
+            echo "Error: Could not determine the default branch from the remote repository."
+            return 1
+        fi
+        echo "Default branch 'main' not found. Using remote default branch '$default_branch'."
+    fi
+
+    # Get the branch to rebase from, defaulting to the determined default branch
     branch="${1:-$default_branch}"
 
     # Check if git is installed
     if ! command -v git >/dev/null 2>&1; then
-        echo "Error: git is not installed."
+        echo "Error: Git is not installed."
         return 1
     fi
 
-    # Check if inside a git repository
+    # Check if inside a Git repository
     if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-        echo "Error: Not inside a git repository."
+        echo "Error: Not inside a Git repository."
         return 1
     fi
 
