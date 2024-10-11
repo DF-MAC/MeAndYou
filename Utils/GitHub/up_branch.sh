@@ -63,8 +63,14 @@ upBranch() {
 
     # Fetch updates from origin, including the specified branch
     echo "Fetching updates from origin..."
-    if ! git fetch origin "$branch"; then
-        echo "Error: Failed to fetch from origin."
+    git switch "$branch"
+    git pull origin "$branch"
+    git switch -
+
+    # Check if the specified branch exists on the remote
+    if ! git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+        echo "Error: Branch '$branch' does not exist on remote 'origin'."
+        # Pop the stash if it was pushed
         if [ "$stash_pushed" = true ]; then
             echo "Restoring stashed changes."
             git stash pop
