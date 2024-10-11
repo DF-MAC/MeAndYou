@@ -116,4 +116,5 @@ upBranch() {
 
     # Success message
     echo "Successfully rebased '$current_branch' onto 'origin/$branch'."
+    return 0
 }
