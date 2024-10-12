@@ -68,7 +68,7 @@ def up_branch(branch='main'):
             print(f"The default branch on remote 'origin' is '{
                   remote_default_branch}'.")
             print("Please specify the branch to rebase onto:")
-            print(f"  up_branch('{remote_default_branch}')")
+            print(f"Example:  up_branch('{remote_default_branch}')")
         else:
             print("Could not determine the default branch on remote 'origin'.")
             print("Please specify the branch to rebase onto.")
