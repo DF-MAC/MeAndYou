@@ -1,6 +1,5 @@
 use std::env;
 use std::process::{Command, exit};
-use std::io::{self, Write};
 
 fn run_command(command: &str, args: &[&str]) -> Result<(), String> {
     let status = Command::new(command)
@@ -56,7 +55,7 @@ fn main() {
                         let remote_default_branch = line.split(':').nth(1).unwrap_or("").trim();
                         println!("The default branch on remote 'origin' is '{}'.", remote_default_branch);
                         println!("Please specify the branch to rebase onto:");
-                        println!("Example: up_branch {}");
+                        println!("Example: up_branch {}", remote_default_branch);
                         exit(1);
                     }
                 }
