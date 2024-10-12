@@ -1,4 +1,19 @@
 #!/usr/bin/env python3
+"""
+Rebase the current branch onto the specified branch from the remote.
+
+Usage:
+    up_branch(branch='main')
+
+Example:
+    up_branch('main')
+    up_branch('master')
+    up_branch('develop')
+    up_branch('feature/branch-name')
+    up_branch('bugfix/branch-name')
+    up_branch('release/branch-name')
+    up_branch('hotfix/branch-name')
+"""
 
 import subprocess
 import sys
@@ -29,7 +44,9 @@ def run_command(command, capture_output=False, check=True):
 
 
 def up_branch(branch='main'):
-    # Check if git is installed
+    """
+    Rebase the current branch onto the specified branch from the remote.
+    """
     if not shutil.which('git'):
         print("Error: Git is not installed.")
         sys.exit(1)
@@ -170,8 +187,8 @@ def up_branch(branch='main'):
 if __name__ == '__main__':
     # Check if a branch name was provided as an argument
     if len(sys.argv) > 1:
-        branch_name = sys.argv[1]
+        BRANCH_NAME = sys.argv[1]
     else:
-        branch_name = 'main'
+        BRANCH_NAME = 'main'
 
-    up_branch(branch_name)
+    up_branch(BRANCH_NAME)
