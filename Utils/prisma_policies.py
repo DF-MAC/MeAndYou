@@ -5,12 +5,31 @@
 
 import sys
 import os
+import re
 import yaml  # Install via 'pip3 install pyyaml'
 
 
 def clean_input(s):
     """Strip leading and trailing whitespace and quotes from a string."""
     return s.strip().strip('"').strip("'")
+
+
+def format_rql(rql):
+    """Insert newline before 'AND', 'and', 'OR', 'or'."""
+    # Ensure consistent spacing around operators
+    rql = re.sub(r'\s+(AND|and|OR|or)\s+', r' \1 ', rql)
+    # Insert newline before operators
+    rql = re.sub(r'\s+(AND|and|OR|or)\s+', r'\n\1 ', rql)
+    return rql
+
+
+# Custom string classes
+class QuotedString(str):
+    pass
+
+
+class UnquotedString(str):
+    pass
 
 
 def create_yaml_file(name: str):
@@ -30,28 +49,27 @@ def create_yaml_file(name: str):
 
     # Prompt for 'description' and clean input
     description = clean_input(input("Enter the description: "))
-    data['description'] = description
+    data['description'] = QuotedString(description)
     data['short_name'] = filename
 
     # Prompt for 'type' (default is 'config') and clean input
     type_input = input("Enter the type (default is 'config'): ")
     data['type'] = clean_input(type_input) if type_input else 'config'
 
-# -------------------------------UNCOMMENT BELOW TO SELECT CLOUD TYPE--------------------------------
+    # -------------------------------UNCOMMENT BELOW TO SELECT CLOUD TYPE--------------------------------
     # Prompt for 'cloud_type' (choices: azure, AWS, GCP) and clean input
     # while True:
     #     cloud_type = clean_input(
     #         input("Enter the cloud type (azure, AWS, or GCP): "))
     #     if cloud_type.lower() in ['azure', 'aws', 'gcp']:
     #         data['cloud_type'] = cloud_type.lower()
-    # break
-    # else:
-    #     print("Invalid cloud type. Please enter 'azure', 'AWS', or 'GCP'.")
+    #         break
+    #     else:
+    #         print("Invalid cloud type. Please enter 'azure', 'AWS', or 'GCP'.")
     data['cloud_type'] = 'azure'
-# -------------------------------UNCOMMENT ABOVE TO SELECT CLOUD TYPE--------------------------------
+    # -------------------------------UNCOMMENT ABOVE TO SELECT CLOUD TYPE--------------------------------
 
-# -------------------------------UNCOMMENT BELOW TO SELECT SEVERITY --------------------------------
-
+    # -------------------------------UNCOMMENT BELOW TO SELECT SEVERITY --------------------------------
     # Prompt for 'severity' and clean input
     # while True:
     #     severity = clean_input(
@@ -60,9 +78,9 @@ def create_yaml_file(name: str):
     #         data['severity'] = severity.lower()
     #         break
     #     else:
-    #         print("Invalid severity. Please enter 'high', 'medium', or 'low'.")
+    #         print("Invalid severity. Please enter 'high', 'medium', 'low', or 'informational'.")
     data['severity'] = 'high'
-# -------------------------------UNCOMMENT ABOVE TO SELECT CLOUD TYPE--------------------------------
+    # -------------------------------UNCOMMENT ABOVE TO SELECT SEVERITY --------------------------------
 
     # Prompt for 'recommendation' (assuming it's a multi-line string)
     print("Enter the recommendation (end with an empty line):")
@@ -77,19 +95,20 @@ def create_yaml_file(name: str):
         # Handle unexpected EOF
         pass
     recommendation = '\n'.join(recommendation_lines)
-    data['recommendation'] = recommendation
+    data['recommendation'] = QuotedString(recommendation)
 
     # Prompt for 'labels' (as a list) and clean inputs
     labels_input = input("Enter labels separated by commas: ")
-    # Capitalize the data['severity'], add a '$' prefix, and add it to the labels_list
-    labels_input += data['severity'].upper()
-    # Add labels that will automatically be added to the policy in addition to the labels provided by the user.
-    labels_input += 'eis'
     labels_list = [clean_input(label)
                    for label in labels_input.split(',') if label.strip()]
     if not labels_list:
         print("No labels provided. Exiting.")
         return
+    # Insert severity label
+    # Insert severity label
+    severity_label = f"${data['severity'].upper()}"
+    labels_list.insert(0, QuotedString("eis"))
+    labels_list.insert(1, severity_label)
     data['labels'] = labels_list
 
     # Build 'compliance_standards' section
@@ -101,11 +120,13 @@ def create_yaml_file(name: str):
     compliance['name'] = clean_input(
         compliance_name) if compliance_name else 'EIS_Beta'
     # Prompt for 'requirement' and clean input
-    compliance['requirement'] = clean_input(
+    requirement_input = clean_input(
         input("Enter the compliance requirement: "))
+    compliance['requirement'] = UnquotedString(requirement_input)
     # Prompt for 'section' and clean input
-    compliance['section'] = clean_input(
+    section_input = clean_input(
         input("Enter the compliance section: "))
+    compliance['section'] = QuotedString(section_input)
     data['compliance_standards'].append(compliance)
 
     # Build 'policy_subtypes' section
@@ -128,11 +149,22 @@ def create_yaml_file(name: str):
         # Handle unexpected EOF
         pass
     rql = '\n'.join(rql_lines)
+    # Format the rql string
+    rql = format_rql(rql)
     data['policy_subtypes']['runtime']['rql'] = rql
+
+    # Custom Dumper class to adjust indentation
+    class IndentDumper(yaml.SafeDumper):
+        def increase_indent(self, flow=False, indentless=False):
+            return super(IndentDumper, self).increase_indent(flow, False)
 
     # Custom representer functions
     def represent_str(dumper, data):
-        if '\n' in data:
+        if isinstance(data, QuotedString):
+            return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='"')
+        elif isinstance(data, UnquotedString):
+            return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='')
+        elif '\n' in data:
             return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
         elif any(c in data for c in [' ', '"', "'", "$", "#", "@", ":", "."]):
             return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='"')
@@ -143,13 +175,22 @@ def create_yaml_file(name: str):
         return dumper.represent_sequence('tag:yaml.org,2002:seq', data, flow_style=False)
 
     # Register custom representers
-    yaml.add_representer(str, represent_str)
-    yaml.add_representer(list, represent_list)
+    IndentDumper.add_representer(str, represent_str)
+    IndentDumper.add_representer(list, represent_list)
+    IndentDumper.add_representer(QuotedString, represent_str)
+    IndentDumper.add_representer(UnquotedString, represent_str)
 
     # Write the data to a YAML file
     try:
         with open(filename_with_extension, 'w') as file:
-            yaml.dump(data, file, sort_keys=False, default_flow_style=False)
+            yaml.dump(
+                data,
+                file,
+                Dumper=IndentDumper,
+                sort_keys=False,
+                default_flow_style=False,
+                indent=2
+            )
         print(f"Created file: {filename_with_extension}")
     except Exception as e:
         print(f"An error occurred while writing the YAML file: {e}")

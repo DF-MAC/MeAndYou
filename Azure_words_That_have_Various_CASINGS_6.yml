@@ -1,0 +1,25 @@
+name: Azure_words_That_have_Various_CASINGS_6
+description: Description
+short_name: Azure_words_That_have_Various_CASINGS_6
+type: config
+cloud_type: azure
+severity: high
+recommendation: Recommendation
+labels:
+  - "eis"
+  - "$HIGH"
+  - "#3.1"
+  - "@Compute"
+compliance_standards:
+  - name: EIS_Beta
+    requirement: Access Control
+    section: "AC-03"
+policy_subtypes:
+  runtime:
+    saved_search: false
+    rql: |-
+      rql query
+      and words
+      or other words
+      and some other stuff
+      AND some other stuff
