@@ -32,10 +32,10 @@ class UnquotedString(str):
     pass
 
 
-def create_yaml_file(name: str):
+def create_yaml_file(json_data: dict):
     """Create a YAML file with the given name, then prompt engineer for policy details."""
     # Replace spaces with underscores for the filename
-    filename = name.replace(' ', '_')
+    filename = json_data['name'].replace(' ', '_')
     # Optionally, convert to lowercase
     # filename = filename.lower()
     # Add .yml extension
@@ -48,13 +48,11 @@ def create_yaml_file(name: str):
     data['name'] = filename
 
     # Prompt for 'description' and clean input
-    description = clean_input(input("Enter the description: "))
-    data['description'] = QuotedString(description)
+    data['description'] = QuotedString(json_data['description'])
     data['short_name'] = filename
 
     # Prompt for 'type' (default is 'config') and clean input
-    type_input = input("Enter the type (default is 'config'): ")
-    data['type'] = clean_input(type_input) if type_input else 'config'
+    data['type'] = 'config'
 
     # -------------------------------UNCOMMENT BELOW TO SELECT CLOUD TYPE--------------------------------
     # Prompt for 'cloud_type' (choices: azure, AWS, GCP) and clean input
@@ -66,7 +64,7 @@ def create_yaml_file(name: str):
     #         break
     #     else:
     #         print("Invalid cloud type. Please enter 'azure', 'AWS', or 'GCP'.")
-    data['cloud_type'] = 'azure'
+    data['cloud_type'] = json_data['cloudType']
     # -------------------------------UNCOMMENT ABOVE TO SELECT CLOUD TYPE--------------------------------
 
     # -------------------------------UNCOMMENT BELOW TO SELECT SEVERITY --------------------------------
@@ -82,23 +80,10 @@ def create_yaml_file(name: str):
     data['severity'] = 'high'
     # -------------------------------UNCOMMENT ABOVE TO SELECT SEVERITY --------------------------------
 
-    # Prompt for 'recommendation' (assuming it's a multi-line string)
-    print("Enter the recommendation (end with an empty line):")
-    recommendation_lines = []
-    try:
-        while True:
-            line = input()
-            if line == '':
-                break
-            recommendation_lines.append(line)
-    except EOFError:
-        # Handle unexpected EOF
-        pass
-    recommendation = '\n'.join(recommendation_lines)
-    data['recommendation'] = QuotedString(recommendation)
+    data['recommendation'] = QuotedString(json_data['recommendation'])
 
-    # Prompt for 'labels' (as a list) and clean inputs
-    labels_input = input("Enter labels separated by commas: ")
+    # TODO: conditionally handle the labels syntax/formatting
+    labels_input = json_data['labels']
     labels_list = [clean_input(label)
                    for label in labels_input.split(',') if label.strip()]
     if not labels_list:
@@ -106,23 +91,18 @@ def create_yaml_file(name: str):
         return
     # Insert severity label
     # Insert severity label
-    severity_label = f"${data['severity'].upper()}"
-    labels_list.insert(0, QuotedString("eis"))
-    labels_list.insert(1, severity_label)
+    labels_list.insert(0, UnquotedString("eis"))
     data['labels'] = labels_list
 
     # Build 'compliance_standards' section
     data['compliance_standards'] = []
     compliance = {}
     # Prompt for 'name' (default 'EIS_Beta' or optional 'EIS')
-    compliance_name = input(
-        "Enter the compliance standard name (default is 'EIS_Beta'): ")
-    compliance['name'] = clean_input(
-        compliance_name) if compliance_name else 'EIS_Beta'
+
+    compliance['name'] = 'EIS_Beta'
     # Prompt for 'requirement' and clean input
-    requirement_input = clean_input(
-        input("Enter the compliance requirement: "))
-    compliance['requirement'] = UnquotedString(requirement_input)
+
+    compliance['requirement'] = UnquotedString(json_data['requirement'])
     # Prompt for 'section' and clean input
     section_input = clean_input(
         input("Enter the compliance section: "))
@@ -196,18 +176,15 @@ def create_yaml_file(name: str):
         print(f"An error occurred while writing the YAML file: {e}")
 
 
+def create_yaml_files_from_dicts(dict_list):
+    """Process a list of dictionaries and create a YAML file for each."""
+    for json_data in dict_list:
+        create_yaml_file(json_data)
+
+
 if __name__ == "__main__":
     try:
-        if len(sys.argv) < 2:
-            name_input = input("Enter the name: ")
-            if not name_input.strip():
-                print("Name cannot be empty. Exiting.")
-                sys.exit(1)
-            create_yaml_file(name_input)
-        else:
-            # Join all arguments to handle inputs with spaces
-            name_input = ' '.join(sys.argv[1:])
-            create_yaml_file(name_input)
+        create_yaml_files_from_dicts(dict_list)
     except KeyboardInterrupt:
         print("\nScript interrupted by user. Exiting.")
     except Exception as e:
